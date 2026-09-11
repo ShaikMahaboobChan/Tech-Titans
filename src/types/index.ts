@@ -153,3 +153,28 @@ export interface ToastMessage {
   message: string;
   timestamp: number;
 }
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  role: UserRole;
+  organization: string;
+  clearanceLevel: string;
+  avatarUrl?: string;
+  lastLogin: string;
+}
+
+export interface LoginCredentials {
+  identifier: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+export interface AuthState {
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+

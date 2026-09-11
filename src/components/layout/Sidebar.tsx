@@ -14,8 +14,10 @@ import {
   ChevronRight,
   Shield,
   Radio,
+  LogOut,
 } from 'lucide-react';
 import { useVisionTrust } from '../../context/VisionTrustContext';
+import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types';
 
 interface NavItemConfig {
@@ -50,7 +52,10 @@ export const Sidebar: React.FC = () => {
     tamperState,
     setActiveDatasetId,
     setActiveModelId,
+    addToast,
   } = useVisionTrust();
+
+  const { logout, updateUserRole } = useAuth();
 
   const isAnyTampered = Object.values(tamperState).some(Boolean);
 
@@ -58,6 +63,19 @@ export const Sidebar: React.FC = () => {
     setActiveTab(tabId);
     if (tabId === 'datasets') setActiveDatasetId(null);
     if (tabId === 'models') setActiveModelId(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    addToast('info', 'Session Terminated', 'Signed out from VisionTrust terminal.');
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/login');
+    }
+  };
+
+  const handleRoleChange = (role: UserRole) => {
+    setCurrentUserRole(role);
+    updateUserRole(role);
   };
 
   return (
@@ -147,7 +165,7 @@ export const Sidebar: React.FC = () => {
             <select
               className="form-select"
               value={currentUserRole}
-              onChange={(e) => setCurrentUserRole(e.target.value as UserRole)}
+              onChange={(e) => handleRoleChange(e.target.value as UserRole)}
               style={{
                 fontSize: '12px',
                 padding: '6px 8px',
@@ -162,14 +180,35 @@ export const Sidebar: React.FC = () => {
               <option value="DEFENCE AUDITOR">DEFENCE AUDITOR</option>
               <option value="ML SEC-OPS">ML SEC-OPS</option>
             </select>
+
+            <button
+              type="button"
+              className="sidebar-logout-btn"
+              onClick={handleLogout}
+              title="Sign out of VisionTrust"
+            >
+              <LogOut size={13} />
+              <span>Sign Out</span>
+            </button>
           </div>
         ) : (
-          <div
-            className="user-avatar-indicator"
-            title={`Active Role: ${currentUserRole}`}
-            style={{ margin: '0 auto' }}
-          >
-            {currentUserRole.charAt(0)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
+            <div
+              className="user-avatar-indicator"
+              title={`Active Role: ${currentUserRole}`}
+              style={{ margin: '0 auto' }}
+            >
+              {currentUserRole.charAt(0)}
+            </div>
+            <button
+              type="button"
+              className="sidebar-logout-btn-collapsed"
+              onClick={handleLogout}
+              title="Sign out of VisionTrust"
+              aria-label="Sign Out"
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         )}
       </div>

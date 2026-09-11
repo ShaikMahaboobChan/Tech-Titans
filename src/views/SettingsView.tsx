@@ -13,8 +13,12 @@ import {
   ScanSearch,
   ShieldCheck,
   Sparkles,
+  LogOut,
+  Shield,
+  UserCheck,
 } from 'lucide-react';
 import { useVisionTrust } from '../context/VisionTrustContext';
+import { useAuth } from '../context/AuthContext';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 
 interface UplinkNode {
@@ -25,7 +29,8 @@ interface UplinkNode {
 }
 
 export const SettingsView: React.FC = () => {
-  const { restoreIntegrity, addToast, clearAllData, setActiveTab } = useVisionTrust();
+  const { restoreIntegrity, addToast, clearAllData, setActiveTab, currentUserRole } = useVisionTrust();
+  const { user, logout, rememberMePreference } = useAuth();
 
   const [hashAlgo, setHashAlgo] = useState('SHA-256');
   const [autoVerify, setAutoVerify] = useState(true);
@@ -34,9 +39,19 @@ export const SettingsView: React.FC = () => {
   const [uplinkNodes, setUplinkNodes] = useState<UplinkNode[]>([]);
   const [isAddNodeOpen, setIsAddNodeOpen] = useState(false);
   const [isWipeModalOpen, setIsWipeModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [nodeName, setNodeName] = useState('');
   const [nodeProtocol, setNodeProtocol] = useState('TLS 1.3');
   const [nodeEndpoint, setNodeEndpoint] = useState('');
+
+  const handleSessionLogout = () => {
+    setIsLogoutModalOpen(false);
+    logout();
+    addToast('info', 'Session Terminated', 'You have been safely signed out of VisionTrust.');
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/login');
+    }
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,6 +332,109 @@ export const SettingsView: React.FC = () => {
           </div>
         )}
 
+        {/* Active Security Session & Operator Identity */}
+        <div className="defense-card">
+          <div className="card-header">
+            <h3 className="card-title">
+              <UserCheck size={16} style={{ color: 'var(--accent-cyan)' }} />
+              <span>Active Terminal Session & Identity</span>
+            </h3>
+            <span className="status-badge badge-verified" style={{ fontSize: '11px' }}>
+              AUTHENTICATED
+            </span>
+          </div>
+
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+            Zero-trust cryptographic session active for this terminal. Digital signatures and operational actions are logged under this operator identity.
+          </p>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '12px',
+              padding: '14px',
+              backgroundColor: 'rgba(11, 23, 38, 0.7)',
+              border: '1px solid #1E3A5F',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '16px',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
+                Operator Name
+              </div>
+              <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#FFFFFF' }}>
+                {user?.name || 'Authorized Officer'}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
+                Identifier / Email
+              </div>
+              <div className="font-mono" style={{ fontSize: '12.5px', color: 'var(--accent-cyan)' }}>
+                {user?.email || 'officer@visiontrust.mil'}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
+                Operational Role
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Shield size={13} style={{ color: 'var(--accent-cyan)' }} />
+                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#38BDF8' }}>
+                  {user?.role || currentUserRole}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
+                Clearance Level
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--status-verified)', fontWeight: 600 }}>
+                {user?.clearanceLevel || 'LEVEL 4 - OPERATIONAL'}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
+                Organization
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                {user?.organization || 'MoD Defence Network'}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
+                Persistence Mode
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                {rememberMePreference ? 'Local Storage (Remembered)' : 'Ephemeral Session Only'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setIsLogoutModalOpen(true)}
+              style={{
+                color: '#F87171',
+                borderColor: 'rgba(239, 68, 68, 0.4)',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              }}
+            >
+              <LogOut size={14} />
+              <span>Sign Out of VisionTrust</span>
+            </button>
+          </div>
+        </div>
+
         {/* System Reset */}
         <div className="defense-card">
           <div className="card-header">
@@ -351,6 +469,16 @@ export const SettingsView: React.FC = () => {
           isDangerous={true}
           onConfirm={handleWipeConfirm}
           onCancel={() => setIsWipeModalOpen(false)}
+        />
+
+        <ConfirmModal
+          isOpen={isLogoutModalOpen}
+          title="Sign Out of VisionTrust?"
+          message="This will terminate your current zero-trust authenticated session and return you to the login gateway."
+          confirmLabel="Sign Out"
+          isDangerous={false}
+          onConfirm={handleSessionLogout}
+          onCancel={() => setIsLogoutModalOpen(false)}
         />
       </div>
     </div>
